@@ -17,8 +17,15 @@
     }
   ],
   "require": {
-    "php": ">=5.4.0"
+    "php": ">=5.4.0",
+    "obiba/ObibaMicaClient": "@dev"
   },
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "/home/samir/projects/obiba-mica-client-api"
+    }
+  ],
   "scripts": {
     "post-update-cmd": ["@composer dump-autoload -o"],
     "post-install-cmd": ["@composer dump-autoload -o"]
