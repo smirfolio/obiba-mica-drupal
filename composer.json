@@ -18,11 +18,11 @@
   ],
   "require": {
     "php": ">=5.4.0",
-    "obiba/obibamicaclient": "master"
+    "obiba/obibamicaclient": "@dev"
   },
   "repositories": [
     {
-      "type": "vcs",
+      "type": "path",
       "url": "/home/samir/projects/obiba-mica-client-api"
     }
   ],
