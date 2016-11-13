@@ -1,0 +1,40 @@
+[
+    {
+        "name": "obiba/obibamicaclient",
+        "version": "dev-master",
+        "version_normalized": "9999999-dev",
+        "source": {
+            "type": "git",
+            "url": "/home/samir/projects/obiba-mica-client-api",
+            "reference": "eebea2b0cacccbd6908cf5d81546ca44b09f0305"
+        },
+        "require": {
+            "php": ">=5.4.0"
+        },
+        "time": "2016-11-13 02:40:50",
+        "type": "library",
+        "installation-source": "source",
+        "autoload": {
+            "psr-4": {
+                "ObibaMicaClient\\": "src/"
+            }
+        },
+        "license": [
+            "MIT"
+        ],
+        "authors": [
+            {
+                "name": "Ben Sghaier Samir",
+                "email": "ben.sghaier.samir@gmail.com"
+            }
+        ],
+        "description": "Obiba Mica client Api.",
+        "homepage": "http://obiba.org",
+        "keywords": [
+            "harmonization",
+            "mica",
+            "obiba",
+            "studies"
+        ]
+    }
+]
