@@ -212,13 +212,11 @@ class DrupalHttpClient {
     }
     else {
 
-      $current_anonymous_pass = $this->drupalConfig->micaGetConfig
-      ('mica_anonymous_password');
+      $current_anonymous_pass = $this->drupalConfig->micaGetConfig('mica_anonymous_password');
       $saved_anonymous_pass = $this->drupalConfig->micaGetConfig('mica_anonymous_password_saved');
 
       // always append credentials in case of mica session has expired
-      $credentials = $this->drupalConfig->micaGetConfig
-        ('mica_anonymous_name') . ':' . $current_anonymous_pass;
+      $credentials = $this->drupalConfig->micaGetConfig('mica_anonymous_name') . ':' . $current_anonymous_pass;
       $this->httpSetHeaders(array(
         self::AUTHORIZATION_HEADER => array(
           'Basic ' . base64_encode($credentials),
