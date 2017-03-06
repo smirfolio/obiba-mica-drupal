@@ -115,6 +115,18 @@ class DrupalHttpClient {
    * @return $this
    */
   public function send($parameters = NULL, $ajax = FALSE) {
+    $isAjax = function ($ajax) {
+      if (!empty($ajax)) {
+        return $ajax;
+      }
+      else {
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == "xmlhttprequest") {
+          return TRUE;
+        }
+      }
+      return FALSE;
+    };
+
     $url = $this->micaUrl . $this->resource;
     $requestOptions = array(
       'method' => $this->httpType,
@@ -128,7 +140,8 @@ class DrupalHttpClient {
     try {
       $dataResponse = $client->execute($request);
       $this->lastResponse = $client->lastResponse;
-      if ($ajax) {
+      //@TODO better handling ajax call by detecting them
+      if ($isAjax($ajax)) {
         $headers = $this->httpGetLastResponseHeaders();
         if (!empty($headers) && !empty($headers['Location'])) {
           $this->micaClientAddHttpHeader('Location', $headers['Location'][0]);
@@ -138,19 +151,22 @@ class DrupalHttpClient {
       }
       return $dataResponse;
     } catch (\HttpClientException $e) {
-      $this->drupalWatchDog->MicaWatchDog('MicaClient', 'Connection to server fail,  Error serve code : @code, message: @message',
+      $this->drupalWatchDog->MicaWatchDog('Mica Client', 'Connection to server fail,  Error serve code : @code, message: @message',
         array(
           '@code' => $e->getCode(),
           '@message' => $e->getMessage(),
         ), $this->drupalWatchDog->MicaWatchDogSeverity('WARNING'));
       $this->lastResponse = $client->lastResponse;
       unset($this->dataResponse);
-      if ($ajax) {
-        $this->micaClientAddHttpHeader('Status', $e->getCode());
-        return json_encode(array(
-          'code' => $e->getCode(),
-          'message' => $e->getMessage(),
-        ));
+      //@TODO better handling ajax call by detecting them (PS: see $isAjax) to refactor
+      if ($isAjax($ajax)) {
+//        $this->micaClientAddHttpHeader('Status', $e->getCode());
+//        return json_encode(array(
+//          'code' => $e->getCode(),
+//          'message' => $e->getMessage(),
+//        ));
+        header('HTTP/1.0 '. $e->getCode() . ' ' . $e->getMessage());
+        exit;
       }
       else {
         $message_parameters['message'] = 'Connection to server fail,  Error serve code : @code, message: @message';
