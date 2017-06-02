@@ -185,6 +185,172 @@ class DrupalHttpClient {
   }
 
   /**
+   * Perform the http query.
+   *
+   * @param $parameters
+   * @param $ajax
+   * @return $this
+   */
+  public function download($parameters = NULL, $ajax = FALSE) {
+    $isAjax = function ($ajax) {
+      if (!empty($ajax)) {
+        return $ajax;
+      }
+      else {
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == "xmlhttprequest") {
+          return TRUE;
+        }
+      }
+      return FALSE;
+    };
+
+    $url = $this->micaUrl . $this->resource;
+    $requestOptions = array(
+      'method' => $this->httpType,
+      'headers' => $this->headers,
+    );
+    if (!empty($parameters)) {
+      $requestOptions = array_merge_recursive($requestOptions, $parameters);
+    }
+    $request = $this->getMicaHttpClientRequest($url, $requestOptions);
+    $client = $this->client();
+    try {
+      $data = $client->execute($request);
+      $file_name = $this->getPropertyValueFromHeaderArray($this->parseHeaders($client->lastResponse->headers),
+        'filename',
+        'Content-Disposition'
+      );
+
+      $raw_data = array(
+        'extension' => $this->getFileExtension($file_name),
+        'data' => $data,
+        'filename' => $file_name,
+        'raw_header_array' => $this->parseHeaders($client->lastResponse->headers),
+      );
+      return $raw_data;
+    } catch (\HttpClientException $e) {
+      $this->drupalWatchDog->MicaWatchDog('Mica Client', 'Connection to server fail,  Error serve code : @code, message: @message',
+        array(
+          '@code' => $e->getCode(),
+          '@message' => $e->getMessage(),
+        ), $this->drupalWatchDog->MicaWatchDogSeverity('WARNING'));
+      $this->lastResponse = $client->lastResponse;
+      unset($this->dataResponse);
+      //@TODO better handling ajax call by detecting them (PS: see $isAjax) to refactor
+      if ($isAjax($ajax)) {
+//        $this->micaClientAddHttpHeader('Status', $e->getCode());
+//        return json_encode(array(
+//          'code' => $e->getCode(),
+//          'message' => $e->getMessage(),
+//        ));
+        header('HTTP/1.0 '. $e->getCode() . ' ' . $e->getMessage());
+        exit;
+      }
+      else {
+        $message_parameters['message'] = 'Connection to server fail,  Error serve code : @code, message: @message';
+        $message_parameters['placeholders'] = array(
+          '@code' => $e->getCode(),
+          '@message' => $e->getMessage()
+        );
+        $message_parameters['severity'] = 'error';
+        if ($e->getCode() == 500 || $e->getCode() == 503 || $e->getCode() == 0) {
+          DrupalMicaError::DrupalMicaErrorHandler(TRUE, $message_parameters);
+        }
+        drupal_set_message(t($message_parameters['message'], $message_parameters['placeholders']), $message_parameters['severity']);
+      }
+    }
+    return NULL;
+  }
+
+  /**
+   * Parse a string header response and return an key/value array attributes.
+   *
+   * @param string $raw_headers
+   *   The raw header.
+   *
+   * @return array
+   *   The parsed header on an array.
+   */
+  protected function parseHeaders($raw_headers) {
+    $headers = [];
+
+    foreach (explode("\n", $raw_headers) as $i => $h) {
+      $h = explode(':', $h, 2);
+
+      if (isset($h[1])) {
+        $headers[$h[0]] = trim($h[1]);
+      }
+    }
+    return $headers;
+  }
+
+  /**
+   * Get property by given attribute.
+   *
+   * @param string $attribute
+   *   The Attribute to get.
+   * @param string $property
+   *   The property.
+   *
+   * @return string
+   *   The property value.
+   */
+  protected function parseHeader($attribute, $property) {
+    $attributes_array = explode(';', $attribute);
+    foreach ($attributes_array as $property_string) {
+      if (strstr($property_string, $property)) {
+        return $property_value = str_replace('"', '', explode('=', $property_string)[1]);
+      }
+    }
+    return FALSE;
+  }
+
+  /**
+   * Return the value of a given key header attribute  (filename, charset).
+   *
+   * ToDo may be need to be extended to retrieve more attributes(User-Agent,..).
+   *
+   * @param array $header
+   *   The header to parse.
+   * @param string $property
+   *   The property to find.
+   * @param string $attribute
+   *   The attribute.
+   *
+   * @return string
+   *   The value of property.
+   */
+  protected function getPropertyValueFromHeaderArray(array $header, $property, $attribute = NULL) {
+    if (!empty($attribute)) {
+      return $this->parseHeader($header[$attribute], $property);
+    }
+    else {
+      foreach ($header as $attributes) {
+        $find_property_value = $this->parseHeader($attributes, $property);
+        if (!empty($find_property_value)) {
+          return $find_property_value;
+        }
+      }
+    }
+    return NULL;
+  }
+
+  /**
+   * Get the file extension from file resource.
+   *
+   * @param string $file_resource
+   *   The file name.
+   *
+   * @return string
+   *   The file extension.
+   */
+  protected function getFileExtension($file_resource) {
+    $file_array = explode('.', $file_resource);
+    $extension_file = count($file_array);
+
+    return $file_array[$extension_file - 1];
+  }
+  /**
    * The client object construction overriding the httpClient->client() method.
    *
    * @return object
